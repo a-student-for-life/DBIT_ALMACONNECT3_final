@@ -14,14 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.Sort
-import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,8 +27,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -49,25 +43,15 @@ import java.util.*
 import com.example.dbit_almaconnect3.utils.DateUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.ActivityResultLauncher
-import okhttp3.MultipartBody
 import android.content.Context
-import android.app.Application
 import com.example.dbit_almaconnect3.App
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Size
-import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.ui.text.style.TextAlign
 
 data class Announcement(
@@ -249,7 +233,6 @@ fun CollegeAdminAnnouncementsScreen(email: String, navController: NavController)
     var sortByNewest by remember { mutableStateOf(true) }
     var managementModeAnnouncementId by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     
     // Save admin role in SharedPreferences to ensure it's available
     LaunchedEffect(Unit) {
@@ -284,7 +267,7 @@ fun CollegeAdminAnnouncementsScreen(email: String, navController: NavController)
     fun refreshAnnouncements() {
         isRefreshing = true
         fetchAnnouncements { fetchedAnnouncements ->
-            scope.launch(Dispatchers.Main) {
+            MainScope().launch(Dispatchers.Main) {
                 announcements = fetchedAnnouncements
                 isRefreshing = false
             }
@@ -376,9 +359,9 @@ fun CollegeAdminAnnouncementsScreen(email: String, navController: NavController)
                             
                             IconButton(
                                 onClick = {
-                                    scope.launch {
+                                    MainScope().launch {
                                         deleteAnnouncement(announcement.id) { success, message ->
-                                            scope.launch(Dispatchers.Main) {
+                                            MainScope().launch(Dispatchers.Main) {
                                                 if (success) {
                                                     toastMessage = "Announcement deleted"
                                                     refreshAnnouncements()
@@ -411,9 +394,9 @@ fun CollegeAdminAnnouncementsScreen(email: String, navController: NavController)
             announcement = null,
             onDismiss = { showAddDialog = false },
             onSave = { title, content, attachments, pinned ->
-                scope.launch {
+                MainScope().launch {
                     createAnnouncement(title, content, attachments, pinned) { success, message ->
-                        scope.launch(Dispatchers.Main) {
+                        MainScope().launch(Dispatchers.Main) {
                             if (success) {
                                 toastMessage = "Announcement created"
                                 refreshAnnouncements()
@@ -433,9 +416,9 @@ fun CollegeAdminAnnouncementsScreen(email: String, navController: NavController)
             announcement = selectedAnnouncement,
             onDismiss = { selectedAnnouncement = null },
             onSave = { title, content, attachments, pinned ->
-                scope.launch {
+                MainScope().launch {
                     updateAnnouncement(selectedAnnouncement!!.id, title, content, attachments, pinned) { success, message ->
-                        scope.launch(Dispatchers.Main) {
+                        MainScope().launch(Dispatchers.Main) {
                             if (success) {
                                 toastMessage = "Announcement updated"
                                 refreshAnnouncements()
@@ -618,7 +601,6 @@ fun AnnouncementItem(announcement: Announcement) {
     var isLoading by remember { mutableStateOf(false) }
     var refreshTrigger by remember { mutableStateOf(0) }
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     
     // Get user role from SharedPreferences
     val sharedPrefs = App.instance.getSharedPreferences("auth", Context.MODE_PRIVATE)
@@ -630,17 +612,6 @@ fun AnnouncementItem(announcement: Announcement) {
                         userRole.equals("collegeadmin", ignoreCase = true) ||
                         userRole.equals("admin", ignoreCase = true)
     
-    // Log user role for debugging
-    LaunchedEffect(Unit) {
-        Log.d("AnnouncementDebug", "AnnouncementItem - User role: '$userRole', isCollegeAdmin: $isCollegeAdmin")
-        Log.d("AnnouncementDebug", "AnnouncementItem - User email: $userEmail")
-        
-        // Show a toast for college admins to verify the role is detected
-        if (isCollegeAdmin) {
-            Toast.makeText(context, "College Admin View Active", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     // Function to refresh comments
     fun refreshComments() {
         isLoading = true
@@ -886,47 +857,17 @@ fun AnnouncementItem(announcement: Announcement) {
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
                         } else {
-                            // For college admins, add a special header
-                            if (isCollegeAdmin && comments.isNotEmpty()) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(bottom = 8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Monitoring ${comments.size} comments",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    
-                                    Button(
-                                        onClick = { refreshTrigger += 1 },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                        ),
-                                        modifier = Modifier.height(28.dp)
-                                    ) {
-                                        Text("Refresh", fontSize = 10.sp)
-                                    }
-                                }
-                            }
-                            
                             comments.forEach { comment ->
                                 CommentItem(
                                     comment = comment,
                                     onCommentDeleted = {
-                                        // Trigger a refresh when a comment is deleted
                                         refreshTrigger += 1
                                     }
                                 )
                             }
                         }
                         
-                        // Add new comment
+                        // Allow all users (including college admins) to add comments
                         OutlinedTextField(
                             value = newCommentText,
                             onValueChange = { newCommentText = it },
@@ -939,43 +880,24 @@ fun AnnouncementItem(announcement: Announcement) {
                         Button(
                             onClick = {
                                 if (newCommentText.isNotBlank()) {
-                                    scope.launch {
-                                        // CRITICAL: Get user session info directly before posting
-                                        val sharedPrefs = App.instance.getSharedPreferences("auth", Context.MODE_PRIVATE)
-                                        
-                                        // Explicitly read the current logged-in user's email 
-                                        val userEmail = sharedPrefs.getString("email", "") ?: ""
-                                        val token = sharedPrefs.getString("token", "") ?: ""
-                                        
-                                        // Log which user is posting
-                                        Log.d("CommentDebug", "===== USER SESSION INFO =====")
-                                        Log.d("CommentDebug", "User about to post comment: $userEmail")
-                                        Log.d("CommentDebug", "Auth token: ${token.take(10)}...")
-                                        
-                                        // Only proceed if we have valid user info
-                                        if (userEmail.isNotBlank() && userEmail.contains("@")) {
-                                            // Use just the username portion for display
-                                            val username = userEmail.substringBefore("@")
-                                            
-                                            // POST the comment with the current user info
-                                            postComment(announcement.id, newCommentText, userEmail, username) { success, message ->
-                                                scope.launch(Dispatchers.Main) {
-                                                    if (success) {
-                                                        // Refresh comments list
-                                                        fetchComments(announcement.id) { fetchedComments ->
-                                                            comments = fetchedComments
-                                                        }
-                                                        newCommentText = ""
-                                                    } else {
-                                                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            // Handle missing user session
-                                            scope.launch(Dispatchers.Main) {
-                                                Toast.makeText(context, "Error: User not properly logged in.", Toast.LENGTH_SHORT).show()
-                                                Log.e("CommentDebug", "Cannot post comment - invalid user email: '$userEmail'")
+                                    val username = if (isCollegeAdmin) {
+                                        "College Admin"  // Set display name for college admins
+                                    } else {
+                                        userEmail.substringBefore("@")
+                                    }
+                                    
+                                    postComment(
+                                        announcementId = announcement.id,
+                                        text = newCommentText,
+                                        author = userEmail,
+                                        authorName = username
+                                    ) { success, message ->
+                                        MainScope().launch(Dispatchers.Main) {
+                                            if (success) {
+                                                refreshComments()
+                                                newCommentText = ""
+                                            } else {
+                                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                                             }
                                         }
                                     }
@@ -1001,215 +923,91 @@ fun CommentItem(
     onCommentDeleted: () -> Unit
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     
     // Get current user information
-    val sharedPrefs = App.instance.getSharedPreferences("auth", Context.MODE_PRIVATE)
+    val sharedPrefs = context.getSharedPreferences("auth", Context.MODE_PRIVATE)
     val currentUserEmail = sharedPrefs.getString("email", "") ?: ""
     val userRole = sharedPrefs.getString("role", "") ?: ""
     
-    // Determine permissions - ensure we check for both "college" and "collegeadmin" roles
+    // Determine permissions - allow both authors and admins to delete
     val isAuthor = comment.author.equals(currentUserEmail, ignoreCase = true)
     val isAdmin = userRole.equals("admin", ignoreCase = true)
-    val isCollegeAdmin = userRole.equals("college", ignoreCase = true) || userRole.equals("collegeadmin", ignoreCase = true)
+    val isCollegeAdmin = userRole.equals("college", ignoreCase = true) || 
+                        userRole.equals("collegeadmin", ignoreCase = true)
     val canDelete = isAuthor || isAdmin || isCollegeAdmin
     
-    // Admin mode - for tracking comment data
-    val showAdminInfo = isAdmin || isCollegeAdmin
-    
-    // Debug info
-    LaunchedEffect(Unit) {
-        Log.d("CommentDebug", "Rendering comment: ${comment.id}")
-        Log.d("CommentDebug", "Comment author: ${comment.author}, current user: $currentUserEmail")
-        Log.d("CommentDebug", "User role: '$userRole', permissions: isAuthor=$isAuthor, isAdmin=$isAdmin, isCollegeAdmin=$isCollegeAdmin")
-    }
-    
-    var showDeleteConfirm by remember { mutableStateOf(false) }
-    var isReportedMalicious by remember { mutableStateOf(false) }
-    
-    Column(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            // Add a border with color if it's an admin viewing it
-            .then(
-                if (showAdminInfo) {
-                    Modifier.border(
-                        width = 1.dp,
-                        color = if (isReportedMalicious) Color.Red.copy(alpha = 0.3f) else Color.Gray.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(8.dp)
-                    ).padding(horizontal = 8.dp, vertical = 4.dp)
-                } else {
-                    Modifier
-                }
-            )
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(8.dp)
     ) {
-        // Admin badge if viewing as admin
-        if (showAdminInfo) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Text(
-                    text = if (isReportedMalicious) "⚠️ Flagged Comment" else "Admin View",
-                    fontSize = 10.sp,
-                    color = if (isReportedMalicious) Color.Red else Color.Gray,
-                    fontStyle = FontStyle.Italic
-                )
-            }
-        }
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
         ) {
-            Column {
-                // Display the author's name/username
-                Text(
-                    text = comment.authorName,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
-                
-                // Always show the full email for admins, otherwise only show for the comment author
-                if (showAdminInfo || isAuthor) {
-                    Text(
-                        text = comment.author,
-                        fontSize = 10.sp,
-                        color = Color.Gray
-                    )
-                }
-            }
-            
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Show comment timestamp
-                Text(
-                    text = DateUtils.formatDateTime(comment.created),
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-                
-                // Admin tools
-                if (showAdminInfo && !isAuthor) {
-                    IconButton(
-                        onClick = { isReportedMalicious = !isReportedMalicious },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isReportedMalicious) Icons.Filled.Warning else Icons.Filled.Flag,
-                            contentDescription = if (isReportedMalicious) "Unflag comment" else "Flag as malicious",
-                            tint = if (isReportedMalicious) Color.Red else Color.Gray,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-                
-                // Delete button - shown for authors and admins
-                if (canDelete) {
-                    IconButton(
-                        onClick = { showDeleteConfirm = true },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete comment",
-                            tint = if (isReportedMalicious) Color.Red else Color.Red.copy(alpha = 0.7f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            }
-        }
-        
-        // Comment text
-        Text(
-            text = comment.text,
-            fontSize = 14.sp,
-            modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
-        )
-        
-        // Footer area for admins
-        if (showAdminInfo) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "ID: ${comment.id}",
-                    fontSize = 9.sp,
-                    color = Color.Gray
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = comment.text,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    
+                    Text(
+                        text = "By ${comment.authorName} on ${DateUtils.formatDateTime(comment.created)}",
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        fontStyle = FontStyle.Italic
+                    )
+                }
                 
-                if (isReportedMalicious) {
-                    Button(
-                        onClick = { showDeleteConfirm = true },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Red
-                        ),
-                        modifier = Modifier.height(28.dp)
+                if (canDelete) {
+                    IconButton(
+                        onClick = { showDeleteConfirm = true }
                     ) {
-                        Text(
-                            "Remove Flagged Comment",
-                            fontSize = 10.sp
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }
             }
         }
-        
-        Divider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            thickness = 0.5.dp
-        )
     }
     
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { 
-                Text(
-                    text = if (isReportedMalicious && !isAuthor) "Remove Malicious Comment" else "Delete Comment"
-                ) 
-            },
-            text = { 
-                if (isReportedMalicious && showAdminInfo) {
-                    Column {
-                        Text("This comment has been flagged as potentially malicious.")
-                        Text("Author: ${comment.author}")
-                        Text("Are you sure you want to remove it?")
-                    }
-                } else {
-                    Text("Are you sure you want to delete this comment?")
-                }
-            },
+            title = { Text("Delete Comment?") },
+            text = { Text("Are you sure you want to delete this comment?") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        scope.launch {
+                        val mainScope = MainScope()
+                        mainScope.launch {
                             deleteComment(comment.id) { success, message ->
-                                scope.launch(Dispatchers.Main) {
+                                mainScope.launch(Dispatchers.Main) {
                                     if (success) {
-                                        val successMessage = if (isReportedMalicious && showAdminInfo) 
-                                            "Malicious comment removed" else "Comment deleted"
-                                        Toast.makeText(context, successMessage, Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Comment deleted", Toast.LENGTH_SHORT).show()
                                         onCommentDeleted()
                                         showDeleteConfirm = false
                                     } else {
-                                        Toast.makeText(context, "Failed to delete: $message", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             }
                         }
                     }
                 ) {
-                    Text(
-                        text = if (isReportedMalicious && showAdminInfo) "Remove" else "Delete",
-                        color = if (isReportedMalicious) Color.Red else MaterialTheme.colorScheme.error
-                    )
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
