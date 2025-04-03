@@ -92,7 +92,14 @@ fun HomeScreenWithDrawer(role: String, navController: NavController, onLogout: (
                                 fontWeight = FontWeight.Bold,
                                 color = Color.Yellow
                             )
-                        } else {
+                        }else if(role.lowercase() == "collegeadmin"){
+                            Text(
+                                text = "Admin Home Features:",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Green
+                            )
+                        }else {
                             Text(
                                 text = "Student Home Features:",
                                 fontSize = 24.sp,
