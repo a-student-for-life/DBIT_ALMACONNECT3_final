@@ -200,21 +200,39 @@ fun AlumniEventsScreen(email: String, navController: NavController) {
         Color(0xFFDAA520)  // Goldenrod
     )
 
-    // Load existing alumni reunion discussions (tags) under "alumni-reunions".
+    // Load both alumni-created events and admin events marked for alumni
     LaunchedEffect(Unit) {
         val allTags = flarumTagRepository.getTags() ?: return@LaunchedEffect
+        
+        // Get alumni-created events from alumni-reunions category
         val alumniParentId = allTags.firstOrNull { it.slug == "alumni-reunions" }?.id
-        if (alumniParentId != null) {
-            tagList = allTags.filter { it.parentId == alumniParentId }
+        val alumniEvents = if (alumniParentId != null) {
+            allTags.filter { it.parentId == alumniParentId }
+        } else {
+            emptyList()
         }
+        
+        // Get admin events marked for alumni from events category
+        val eventsParentId = allTags.firstOrNull { it.slug == "events" }?.id
+        val adminEvents = if (eventsParentId != null) {
+            allTags.filter { tag ->
+                tag.parentId == eventsParentId && 
+                (tag.name.contains("[ALUMNI]") || tag.name.contains("[ALL]"))
+            }
+        } else {
+            emptyList()
+        }
+        
+        // Combine both lists
+        tagList = alumniEvents + adminEvents
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        // Title at the top.
-        Text(text = "Alumni Reunion Planning for $email", fontSize = 24.sp)
+        // Title at the top
+        Text(text = "Alumni Events & Reunions", fontSize = 24.sp)
         Spacer(modifier = Modifier.height(16.dp))
 
-        // List of discussions fills the available space.
+        // List of discussions fills the available space
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
@@ -229,8 +247,11 @@ fun AlumniEventsScreen(email: String, navController: NavController) {
             }
         }
 
-        // The creation UI is pinned at the bottom.
+        // The creation UI is pinned at the bottom
         Column(modifier = Modifier.fillMaxWidth()) {
+            Text(text = "Create New Alumni Event", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            
             OutlinedTextField(
                 value = graduationYear,
                 onValueChange = { graduationYear = it },
@@ -282,26 +303,41 @@ fun AlumniEventsScreen(email: String, navController: NavController) {
                             parentTagId = parentId
                         )
                         if (newTag != null) {
-                            Toast.makeText(context, "Discussion '${newTag.name}' created", Toast.LENGTH_SHORT).show()
-                            // Refresh the list.
-                            flarumTagRepository.getTags()?.let { updatedTags ->
-                                tagList = updatedTags.filter { it.parentId == parentId }
+                            Toast.makeText(context, "Event '${newTag.name}' created", Toast.LENGTH_SHORT).show()
+                            // Refresh list
+                            val updatedAllTags = flarumTagRepository.getTags()
+                            if (updatedAllTags != null) {
+                                // Get updated alumni events
+                                val alumniEvents = updatedAllTags.filter { it.parentId == parentId }
+                                
+                                // Get admin events marked for alumni
+                                val eventsParentId = updatedAllTags.firstOrNull { it.slug == "events" }?.id
+                                val adminEvents = if (eventsParentId != null) {
+                                    updatedAllTags.filter { tag ->
+                                        tag.parentId == eventsParentId && 
+                                        (tag.name.contains("[ALUMNI]") || tag.name.contains("[ALL]"))
+                                    }
+                                } else {
+                                    emptyList()
+                                }
+                                
+                                // Update the combined list
+                                tagList = alumniEvents + adminEvents
                             }
                             graduationYear = ""
                             discussionTitle = ""
                         } else {
-                            Toast.makeText(context, "Failed to create discussion", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Failed to create event", Toast.LENGTH_SHORT).show()
                         }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Create Reunion Discussion")
+                Text("Create Event")
             }
         }
     }
 }
-
 
 @Composable
 fun StudentEventsScreen(email: String, navController: NavController) {
@@ -314,7 +350,7 @@ fun StudentEventsScreen(email: String, navController: NavController) {
     var expanded by remember { mutableStateOf(false) }
     var selectedYear by remember { mutableStateOf(yearOptions.first()) }
 
-    // Event name input field.
+    // Event name input field
     var eventName by remember { mutableStateOf("") }
     var selectedColor by remember { mutableStateOf(Color(0xFFFFFFFF)) }
     var tagList by remember { mutableStateOf<List<Tag>>(emptyList()) }
@@ -339,21 +375,39 @@ fun StudentEventsScreen(email: String, navController: NavController) {
         Color(0xFFDAA520)
     )
 
-    // Load existing student event discussions (tags) under "student-events".
+    // Load both student-created events and admin events marked for students
     LaunchedEffect(Unit) {
         val allTags = flarumTagRepository.getTags() ?: return@LaunchedEffect
+        
+        // Get student-created events from student-events category
         val studentParentId = allTags.firstOrNull { it.slug == "student-events" }?.id
-        if (studentParentId != null) {
-            tagList = allTags.filter { it.parentId == studentParentId }
+        val studentEvents = if (studentParentId != null) {
+            allTags.filter { it.parentId == studentParentId }
+        } else {
+            emptyList()
         }
+        
+        // Get admin events marked for students from events category
+        val eventsParentId = allTags.firstOrNull { it.slug == "events" }?.id
+        val adminEvents = if (eventsParentId != null) {
+            allTags.filter { tag ->
+                tag.parentId == eventsParentId && 
+                (tag.name.contains("[STUDENTS]") || tag.name.contains("[ALL]"))
+            }
+        } else {
+            emptyList()
+        }
+        
+        // Combine both lists
+        tagList = studentEvents + adminEvents
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        // Screen Title.
-        Text(text = "Student Events Planning for $email", fontSize = 24.sp)
+        // Screen Title
+        Text(text = "Student Events", fontSize = 24.sp)
         Spacer(modifier = Modifier.height(16.dp))
 
-        // List of discussions.
+        // List of discussions
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
@@ -368,10 +422,12 @@ fun StudentEventsScreen(email: String, navController: NavController) {
             }
         }
 
-        // Creation UI (pinned at the bottom).
+        // Creation UI (pinned at the bottom)
         Column(modifier = Modifier.fillMaxWidth()) {
+            Text(text = "Create New Student Event", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // **Simple Dropdown with a Button**
+            // Year selection dropdown
             Text(text = "Select Your Year:", fontSize = 16.sp)
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -381,7 +437,6 @@ fun StudentEventsScreen(email: String, navController: NavController) {
                 ) {
                     Text(text = selectedYear)
                 }
-                // The dropdown menu anchored to this Row
                 DropdownMenu(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
@@ -399,13 +454,15 @@ fun StudentEventsScreen(email: String, navController: NavController) {
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            // Event name input.
+            
+            // Event name input
             OutlinedTextField(
                 value = eventName,
                 onValueChange = { eventName = it },
                 label = { Text("Event Name") },
                 modifier = Modifier.fillMaxWidth()
             )
+            
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(text = "Select Tag Color:", fontSize = 16.sp)
@@ -428,7 +485,7 @@ fun StudentEventsScreen(email: String, navController: NavController) {
                             return@launch
                         }
 
-                        // Generate final title as "FE - [Event Name]".
+                        // Generate final title as "FE - [Event Name]"
                         val finalTitle = if (eventName.isNotBlank()) {
                             "$selectedYear - $eventName"
                         } else {
@@ -443,20 +500,36 @@ fun StudentEventsScreen(email: String, navController: NavController) {
                         )
 
                         if (newTag != null) {
-                            Toast.makeText(context, "Discussion '${newTag.name}' created", Toast.LENGTH_SHORT).show()
-                            // Refresh list.
-                            flarumTagRepository.getTags()?.let { updatedTags ->
-                                tagList = updatedTags.filter { it.parentId == parentId }
+                            Toast.makeText(context, "Event '${newTag.name}' created", Toast.LENGTH_SHORT).show()
+                            // Refresh list
+                            val updatedAllTags = flarumTagRepository.getTags()
+                            if (updatedAllTags != null) {
+                                // Get updated student events
+                                val studentEvents = updatedAllTags.filter { it.parentId == parentId }
+                                
+                                // Get admin events marked for students
+                                val eventsParentId = updatedAllTags.firstOrNull { it.slug == "events" }?.id
+                                val adminEvents = if (eventsParentId != null) {
+                                    updatedAllTags.filter { tag ->
+                                        tag.parentId == eventsParentId && 
+                                        (tag.name.contains("[STUDENTS]") || tag.name.contains("[ALL]"))
+                                    }
+                                } else {
+                                    emptyList()
+                                }
+                                
+                                // Update the combined list
+                                tagList = studentEvents + adminEvents
                             }
                             eventName = ""
                         } else {
-                            Toast.makeText(context, "Failed to create discussion", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Failed to create event", Toast.LENGTH_SHORT).show()
                         }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Create Event Discussion")
+                Text("Create Event")
             }
         }
     }
@@ -479,6 +552,8 @@ fun CollegeAdminEventsScreen(email: String, navController: NavController) {
     var newEventDate by remember { mutableStateOf("") }
     var selectedColor by remember { mutableStateOf(Color(0xFF005B4F)) }
     var isOfficialEvent by remember { mutableStateOf(true) }
+    var isForStudents by remember { mutableStateOf(false) }
+    var isForAlumni by remember { mutableStateOf(false) }
     
     // Define event theme colors
     val eventColors = listOf(
@@ -794,7 +869,11 @@ fun CollegeAdminEventsScreen(email: String, navController: NavController) {
     // Dialog to create a new event
     if (showCreateDialog) {
         androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showCreateDialog = false },
+            onDismissRequest = { 
+                showCreateDialog = false
+                isForStudents = false
+                isForAlumni = false
+            },
             title = { Text("Create New Event") },
             text = {
                 Column {
@@ -835,6 +914,40 @@ fun CollegeAdminEventsScreen(email: String, navController: NavController) {
                         }
                     }
                     
+                    // Target audience selection
+                    Text(
+                        text = "Target Audience:",
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                    
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    ) {
+                        Checkbox(
+                            checked = isForStudents,
+                            onCheckedChange = { isForStudents = it }
+                        )
+                        Text(
+                            text = "Students",
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
+                    
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    ) {
+                        Checkbox(
+                            checked = isForAlumni,
+                            onCheckedChange = { isForAlumni = it }
+                        )
+                        Text(
+                            text = "Alumni",
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
+                    
                     // Checkbox for official event
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -855,13 +968,21 @@ fun CollegeAdminEventsScreen(email: String, navController: NavController) {
                 Button(
                     onClick = {
                         coroutineScope.launch {
-                            if (newEventTitle.isNotEmpty()) {
+                            if (newEventTitle.isNotBlank()) {
+                                // Create audience tag
+                                val audienceTag = when {
+                                    isForStudents && isForAlumni -> "[ALL]"
+                                    isForStudents -> "[STUDENTS]"
+                                    isForAlumni -> "[ALUMNI]"
+                                    else -> "[ALL]" // Default to all if none selected
+                                }
+                                
                                 val fullEventTitle = if (newEventDate.isNotEmpty()) {
                                     val prefix = if (isOfficialEvent) "[OFFICIAL] " else ""
-                                    "$prefix$newEventTitle ($newEventDate)"
+                                    "$prefix$audienceTag $newEventTitle ($newEventDate)"
                                 } else {
                                     val prefix = if (isOfficialEvent) "[OFFICIAL] " else ""
-                                    "$prefix$newEventTitle"
+                                    "$prefix$audienceTag $newEventTitle"
                                 }
                                 
                                 // Get the parent ID for the events category
@@ -871,7 +992,7 @@ fun CollegeAdminEventsScreen(email: String, navController: NavController) {
                                 if (eventsParentId != null) {
                                     val newEvent = flarumTagRepository.createTag(
                                         fullEventTitle,
-                                        selectedColor.toHex(),
+                                        selectedColor.toHexString(),
                                         eventsParentId
                                     )
                                     
@@ -890,6 +1011,8 @@ fun CollegeAdminEventsScreen(email: String, navController: NavController) {
                                         // Reset fields and close dialog
                                         newEventTitle = ""
                                         newEventDate = ""
+                                        isForStudents = false
+                                        isForAlumni = false
                                         showCreateDialog = false
                                     } else {
                                         Toast.makeText(
@@ -919,7 +1042,11 @@ fun CollegeAdminEventsScreen(email: String, navController: NavController) {
                 }
             },
             dismissButton = {
-                Button(onClick = { showCreateDialog = false }) {
+                Button(onClick = { 
+                    showCreateDialog = false
+                    isForStudents = false
+                    isForAlumni = false
+                }) {
                     Text("Cancel")
                 }
             }

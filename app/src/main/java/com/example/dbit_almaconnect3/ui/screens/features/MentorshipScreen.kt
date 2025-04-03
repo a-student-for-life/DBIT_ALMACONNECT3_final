@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -241,12 +242,314 @@ fun MentorshipScreen(email: String, navController: NavController) {
 // Wrappers to retain existing file names.
 @Composable
 fun StudentMentorshipScreen(email: String, navController: NavController) {
-    MentorshipScreen(email, navController)
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val flarumTagRepository = remember { FlarumTagRepository() }
+
+    var tagName by remember { mutableStateOf("") }
+    var selectedColor by remember { mutableStateOf(Color(0xFFFFFFFF)) }
+    var tagList by remember { mutableStateOf<List<Tag>>(emptyList()) }
+
+    // Define primary and additional colors.
+    val primaryColors = listOf(
+        Color(0xFFFF0000), // Red
+        Color(0xFFFFA500), // Orange
+        Color(0xFFFFFF00), // Yellow
+        Color(0xFF008000), // Green
+        Color(0xFF0000FF), // Blue
+        Color(0xFF800080)  // Purple
+    )
+    val additionalShades = listOf(
+        Color(0xFFFFC0CB), // Pink
+        Color(0xFF808080), // Gray
+        Color(0xFF000000), // Black
+        Color(0xFFFFFFFF), // White
+        Color(0xFFB22222), // Firebrick
+        Color(0xFF8B4513), // SaddleBrown
+        Color(0xFF2E8B57), // SeaGreen
+        Color(0xFF4682B4), // SteelBlue
+        Color(0xFFDAA520)  // Goldenrod
+    )
+
+    // Fetch all tags when the screen loads.
+    LaunchedEffect(Unit) {
+        val allTags = flarumTagRepository.getTags() ?: return@LaunchedEffect
+        val primaryId = flarumTagRepository.getPrimaryMentorshipTagId()
+        if (primaryId != null) {
+            // Get student-created programs
+            val studentPrograms = allTags.filter { 
+                it.parentId == primaryId && 
+                !it.name.startsWith("[OFFICIAL]") 
+            }
+            
+            // Get all official programs
+            val officialPrograms = allTags.filter { tag ->
+                tag.parentId == primaryId && 
+                tag.name.startsWith("[OFFICIAL]")
+            }
+            
+            // Combine both lists
+            tagList = officialPrograms + studentPrograms
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(text = "Student Mentorship Programs", fontSize = 24.sp)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(text = "Available Programs:", fontSize = 20.sp)
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            items(tagList) { tag ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
+                    TagItem(tag = tag) {
+                        val tagUrl = "http://129.154.249.30:8080/t/${tag.slug}"
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(tagUrl))
+                        context.startActivity(intent)
+                    }
+                    
+                    // Show "OFFICIAL" label if it's an official program
+                    if (tag.name.startsWith("[OFFICIAL]")) {
+                        Text(
+                            text = "OFFICIAL COLLEGE PROGRAM",
+                            color = Color.Blue,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(start = 8.dp, top = 2.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(text = "Create New Program:", fontSize = 20.sp)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = tagName,
+            onValueChange = { tagName = it },
+            label = { Text("Program Topic/Name") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(text = "Select Program Color:", fontSize = 16.sp)
+        Spacer(modifier = Modifier.height(8.dp))
+        ColorPickerRows(
+            primaryColors = primaryColors,
+            additionalShades = additionalShades,
+            selectedColor = selectedColor,
+            onColorSelected = { selectedColor = it }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    val parentId = flarumTagRepository.getPrimaryMentorshipTagId()
+                    val newTag = flarumTagRepository.createTag(tagName, selectedColor.toHexString(), parentId)
+                    if (newTag != null) {
+                        Toast.makeText(context, "Program '${newTag.name}' created", Toast.LENGTH_SHORT).show()
+                        // Refresh the tag list
+                        val updatedTags = flarumTagRepository.getTags()
+                        if (updatedTags != null && parentId != null) {
+                            // Get student-created programs
+                            val studentPrograms = updatedTags.filter { 
+                                it.parentId == parentId && 
+                                !it.name.startsWith("[OFFICIAL]") 
+                            }
+                            
+                            // Get official programs marked for students
+                            val officialPrograms = updatedTags.filter { tag ->
+                                tag.parentId == parentId && 
+                                tag.name.startsWith("[OFFICIAL]") &&
+                                (tag.name.contains("[STUDENTS]") || tag.name.contains("[ALL]"))
+                            }
+                            
+                            // Update the combined list
+                            tagList = officialPrograms + studentPrograms
+                        }
+                        tagName = ""
+                    } else {
+                        Toast.makeText(context, "Failed to create program", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Create Program")
+        }
+    }
 }
 
 @Composable
 fun AlumniMentorshipScreen(email: String, navController: NavController) {
-    MentorshipScreen(email, navController)
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val flarumTagRepository = remember { FlarumTagRepository() }
+
+    var tagName by remember { mutableStateOf("") }
+    var selectedColor by remember { mutableStateOf(Color(0xFFFFFFFF)) }
+    var tagList by remember { mutableStateOf<List<Tag>>(emptyList()) }
+
+    // Define primary and additional colors.
+    val primaryColors = listOf(
+        Color(0xFFFF0000), // Red
+        Color(0xFFFFA500), // Orange
+        Color(0xFFFFFF00), // Yellow
+        Color(0xFF008000), // Green
+        Color(0xFF0000FF), // Blue
+        Color(0xFF800080)  // Purple
+    )
+    val additionalShades = listOf(
+        Color(0xFFFFC0CB), // Pink
+        Color(0xFF808080), // Gray
+        Color(0xFF000000), // Black
+        Color(0xFFFFFFFF), // White
+        Color(0xFFB22222), // Firebrick
+        Color(0xFF8B4513), // SaddleBrown
+        Color(0xFF2E8B57), // SeaGreen
+        Color(0xFF4682B4), // SteelBlue
+        Color(0xFFDAA520)  // Goldenrod
+    )
+
+    // Fetch all tags when the screen loads.
+    LaunchedEffect(Unit) {
+        val allTags = flarumTagRepository.getTags() ?: return@LaunchedEffect
+        val primaryId = flarumTagRepository.getPrimaryMentorshipTagId()
+        if (primaryId != null) {
+            // Get alumni-created programs
+            val alumniPrograms = allTags.filter { 
+                it.parentId == primaryId && 
+                !it.name.startsWith("[OFFICIAL]") 
+            }
+            
+            // Get all official programs
+            val officialPrograms = allTags.filter { tag ->
+                tag.parentId == primaryId && 
+                tag.name.startsWith("[OFFICIAL]")
+            }
+            
+            // Combine both lists
+            tagList = officialPrograms + alumniPrograms
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(text = "Alumni Mentorship Programs", fontSize = 24.sp)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(text = "Available Programs:", fontSize = 20.sp)
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            items(tagList) { tag ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
+                    TagItem(tag = tag) {
+                        val tagUrl = "http://129.154.249.30:8080/t/${tag.slug}"
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(tagUrl))
+                        context.startActivity(intent)
+                    }
+                    
+                    // Show "OFFICIAL" label if it's an official program
+                    if (tag.name.startsWith("[OFFICIAL]")) {
+                        Text(
+                            text = "OFFICIAL COLLEGE PROGRAM",
+                            color = Color.Blue,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(start = 8.dp, top = 2.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(text = "Create New Program:", fontSize = 20.sp)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = tagName,
+            onValueChange = { tagName = it },
+            label = { Text("Program Topic/Name") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(text = "Select Program Color:", fontSize = 16.sp)
+        Spacer(modifier = Modifier.height(8.dp))
+        ColorPickerRows(
+            primaryColors = primaryColors,
+            additionalShades = additionalShades,
+            selectedColor = selectedColor,
+            onColorSelected = { selectedColor = it }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    val parentId = flarumTagRepository.getPrimaryMentorshipTagId()
+                    val newTag = flarumTagRepository.createTag(tagName, selectedColor.toHexString(), parentId)
+                    if (newTag != null) {
+                        Toast.makeText(context, "Program '${newTag.name}' created", Toast.LENGTH_SHORT).show()
+                        // Refresh the tag list
+                        val updatedTags = flarumTagRepository.getTags()
+                        if (updatedTags != null && parentId != null) {
+                            // Get alumni-created programs
+                            val alumniPrograms = updatedTags.filter { 
+                                it.parentId == parentId && 
+                                !it.name.startsWith("[OFFICIAL]") 
+                            }
+                            
+                            // Get official programs marked for alumni
+                            val officialPrograms = updatedTags.filter { tag ->
+                                tag.parentId == parentId && 
+                                tag.name.startsWith("[OFFICIAL]") &&
+                                (tag.name.contains("[ALUMNI]") || tag.name.contains("[ALL]"))
+                            }
+                            
+                            // Update the combined list
+                            tagList = officialPrograms + alumniPrograms
+                        }
+                        tagName = ""
+                    } else {
+                        Toast.makeText(context, "Failed to create program", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Create Program")
+        }
+    }
 }
 
 @Composable
@@ -413,7 +716,9 @@ fun CollegeAdminMentorshipScreen(email: String, navController: NavController) {
     // Dialog to create a new program
     if (showCreateDialog) {
         androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showCreateDialog = false },
+            onDismissRequest = { 
+                showCreateDialog = false
+            },
             title = { Text("Create New Official Mentorship Program") },
             text = {
                 Column {
