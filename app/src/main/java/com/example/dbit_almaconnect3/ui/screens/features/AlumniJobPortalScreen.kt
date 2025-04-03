@@ -1,6 +1,7 @@
 package com.example.dbit_almaconnect3.ui.screens.features
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -106,6 +108,7 @@ fun AlumniJobPortalScreen(email: String, navController: NavController) {
 fun JobPostingCardForAlumni(job: JobPostingResponse, navController: NavController) {
     // Access the same ViewModel or pass it in
     val viewModel: JobPortalViewModel = viewModel()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -117,7 +120,7 @@ fun JobPostingCardForAlumni(job: JobPostingResponse, navController: NavControlle
         Text(text = "Company: ${job.company}", fontSize = 16.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium)
         Text(text = job.description, fontSize = 16.sp)
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         // Show verification status
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -128,16 +131,16 @@ fun JobPostingCardForAlumni(job: JobPostingResponse, navController: NavControlle
                 color = if (job.status) Color.Green else Color.Gray,
                 fontSize = 14.sp
             )
-            
+
             Text(
                 text = "Posted: ${DateUtils.formatDate(job.postedAt)}",
                 fontSize = 14.sp,
                 color = Color.Gray
             )
         }
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
@@ -151,9 +154,9 @@ fun JobPostingCardForAlumni(job: JobPostingResponse, navController: NavControlle
             ) {
                 Text("View Applications")
             }
-            
+
             Spacer(modifier = Modifier.width(8.dp))
-            
+
             TextButton(
                 onClick = {
                     // Delete this job
@@ -163,6 +166,29 @@ fun JobPostingCardForAlumni(job: JobPostingResponse, navController: NavControlle
                 }
             ) {
                 Text("Delete", color = Color.Red)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Button(
+                onClick = {
+                    if (job.discussionLink != null) {
+                        val encodedLink = Uri.encode(job.discussionLink)
+                        navController.navigate("discussion/$encodedLink") {
+                            launchSingleTop = true
+                        }
+                    } else {
+                        Toast.makeText(context, "No discussion available for this job", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Open Discussion")
             }
         }
     }

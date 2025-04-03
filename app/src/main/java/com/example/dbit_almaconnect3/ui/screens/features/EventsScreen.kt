@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,6 +42,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -51,21 +54,23 @@ import androidx.navigation.NavController
 import com.example.dbit_almaconnect3.data.repository.FlarumTagRepository
 import com.example.dbit_almaconnect3.data.repository.Tag
 import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.layout.ContentScale
+import com.example.dbit_almaconnect3.R
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material3.MaterialTheme
 
 // --------------------- HELPER EXTENSION ---------------------
 // Extension to convert Compose Color to a hex string.
@@ -147,23 +152,52 @@ fun TagCard(
         Color.LightGray
     }
     Card(
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(12.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-            .clickable { onClick() }
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .shadow(
+                elevation = 4.dp,
+                shape = RoundedCornerShape(12.dp),
+                spotColor = backgroundColor.copy(alpha = 0.5f)
+            )
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = backgroundColor
+        )
     ) {
         Box(
             modifier = Modifier
-                .background(backgroundColor)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            contentAlignment = Alignment.CenterStart
         ) {
-            Text(
-                text = tag.name,
-                fontSize = 18.sp,
-                color = Color.White
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = tag.name,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+                
+                // Add a subtle indicator icon
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .background(Color.White.copy(alpha = 0.2f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "→",
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                }
+            }
         }
     }
 }
@@ -177,27 +211,25 @@ fun AlumniEventsScreen(email: String, navController: NavController) {
 
     var graduationYear by remember { mutableStateOf("") }
     var discussionTitle by remember { mutableStateOf("") }
-    var selectedColor by remember { mutableStateOf(Color(0xFFFFFFFF)) }
+    var selectedColor by remember { mutableStateOf(Color(0xFF005B4F)) }
     var tagList by remember { mutableStateOf<List<Tag>>(emptyList()) }
+    var showCreateDialog by remember { mutableStateOf(false) }
 
     val primaryColors = listOf(
-        Color(0xFFFF0000), // Red
-        Color(0xFFFFA500), // Orange
-        Color(0xFFFFFF00), // Yellow
-        Color(0xFF008000), // Green
-        Color(0xFF0000FF), // Blue
-        Color(0xFF800080)  // Purple
+        Color(0xFF005B4F), // College theme color
+        Color(0xFF2E7D32), // Forest Green
+        Color(0xFF1565C0), // Royal Blue
+        Color(0xFF6A1B9A), // Deep Purple
+        Color(0xFFC62828), // Deep Red
+        Color(0xFF8D6E63)  // Brown
     )
     val additionalShades = listOf(
-        Color(0xFFFFC0CB), // Pink
-        Color(0xFF808080), // Gray
-        Color(0xFF000000), // Black
-        Color(0xFFFFFFFF), // White
-        Color(0xFFB22222), // Firebrick
-        Color(0xFF8B4513), // SaddleBrown
-        Color(0xFF2E8B57), // SeaGreen
-        Color(0xFF4682B4), // SteelBlue
-        Color(0xFFDAA520)  // Goldenrod
+        Color(0xFF78909C), // Blue Gray
+        Color(0xFF546E7A), // Steel Blue
+        Color(0xFF37474F), // Dark Slate
+        Color(0xFF004D40), // Teal
+        Color(0xFF006064), // Cyan
+        Color(0xFF01579B)  // Light Blue
     )
 
     // Load both alumni-created events and admin events marked for alumni
@@ -227,115 +259,232 @@ fun AlumniEventsScreen(email: String, navController: NavController) {
         tagList = alumniEvents + adminEvents
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        // Title at the top
-        Text(text = "Alumni Events & Reunions", fontSize = 24.sp)
-        Spacer(modifier = Modifier.height(16.dp))
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F5)) // Fallback background color
+    ) {
+        // Background Image (commented out until images are added)
 
-        // List of discussions fills the available space
-        LazyColumn(
+        Image(
+            painter = painterResource(id = R.drawable.student_events_bg),
+            contentDescription = "Alumni Events Background",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            colorFilter = ColorFilter.tint(
+                color = Color.Black.copy(alpha = 0.3f),
+                blendMode = BlendMode.Darken
+            )
+        )
+
+
+        Column(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
-            items(tagList) { tag ->
-                TagCard(tag = tag) {
-                    val tagUrl = "http://129.154.249.30:8080/t/${tag.slug}"
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(tagUrl))
-                    context.startActivity(intent)
+            // Header with gradient background
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.primaryContainer
+                            )
+                        )
+                    )
+                    .padding(16.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "Alumni Events & Reunions",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = Color.White,
+                        modifier = Modifier.shadow(4.dp, shape = RoundedCornerShape(4.dp))
+                    )
+                    Text(
+                        text = "Connect with fellow alumni and celebrate together",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Create New Event button
+            Button(
+                onClick = { showCreateDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF005B4F)
+                )
+            ) {
+                Text("Create New Event")
+            }
+
+            // List of events
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                items(tagList) { tag ->
+                    val colorStr = if (tag.color.isNullOrEmpty()) "#005B4F" else tag.color
+                    val backgroundColor = try {
+                        Color(AndroidColor.parseColor(colorStr))
+                    } catch (e: Exception) {
+                        Color(0xFF005B4F)
+                    }
+                    
+                    Card(
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable {
+                                val tagUrl = "http://129.154.249.30:8080/t/${tag.slug}"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(tagUrl))
+                                context.startActivity(intent)
+                            }
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .background(backgroundColor)
+                                .padding(16.dp)
+                        ) {
+                            Column {
+                                Text(
+                                    text = tag.name,
+                                    color = Color.White,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                
+                                if (tag.name.contains("[OFFICIAL]")) {
+                                    Text(
+                                        text = "OFFICIAL COLLEGE EVENT",
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
 
-        // The creation UI is pinned at the bottom
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(text = "Create New Alumni Event", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            OutlinedTextField(
-                value = graduationYear,
-                onValueChange = { graduationYear = it },
-                label = { Text("Enter Graduation Year (e.g., 2015)") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = discussionTitle,
-                onValueChange = { discussionTitle = it },
-                label = { Text("Discussion Title (optional)") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Select Tag Color:", fontSize = 16.sp)
-            Spacer(modifier = Modifier.height(8.dp))
-            CustomColorPickerRows(
-                primaryColors = primaryColors,
-                additionalShades = additionalShades,
-                selectedColor = selectedColor,
-                onColorSelected = { selectedColor = it }
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = {
-                    coroutineScope.launch {
-                        val allTags = flarumTagRepository.getTags()
-                        val parentId = allTags?.firstOrNull { it.slug == "alumni-reunions" }?.id
-                        if (parentId == null) {
-                            Toast.makeText(context, "Alumni parent tag missing. Create it first.", Toast.LENGTH_SHORT).show()
-                            return@launch
-                        }
-                        // If graduationYear is provided, use it to create the title with "Alumni Reunion" prefixed.
-                        // Otherwise, use the discussionTitle.
-                        val finalTitle = if (graduationYear.isNotBlank()) {
-                            "Alumni Reunion $graduationYear"
-                        } else if (discussionTitle.isNotBlank()) {
-                            discussionTitle
-                        } else {
-                            ""
-                        }
-                        if (finalTitle.isBlank()) {
-                            Toast.makeText(context, "Please enter a graduation year or a discussion title.", Toast.LENGTH_SHORT).show()
-                            return@launch
-                        }
-                        val newTag = flarumTagRepository.createTag(
-                            name = finalTitle,
-                            color = selectedColor.toHexString(),
-                            parentTagId = parentId
-                        )
-                        if (newTag != null) {
-                            Toast.makeText(context, "Event '${newTag.name}' created", Toast.LENGTH_SHORT).show()
-                            // Refresh list
-                            val updatedAllTags = flarumTagRepository.getTags()
-                            if (updatedAllTags != null) {
-                                // Get updated alumni events
-                                val alumniEvents = updatedAllTags.filter { it.parentId == parentId }
-                                
-                                // Get admin events marked for alumni
-                                val eventsParentId = updatedAllTags.firstOrNull { it.slug == "events" }?.id
-                                val adminEvents = if (eventsParentId != null) {
-                                    updatedAllTags.filter { tag ->
-                                        tag.parentId == eventsParentId && 
-                                        (tag.name.contains("[ALUMNI]") || tag.name.contains("[ALL]"))
-                                    }
-                                } else {
-                                    emptyList()
-                                }
-                                
-                                // Update the combined list
-                                tagList = alumniEvents + adminEvents
+    // Create Event Dialog
+    if (showCreateDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showCreateDialog = false },
+            title = { Text("Create New Event") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = graduationYear,
+                        onValueChange = { graduationYear = it },
+                        label = { Text("Graduation Year (e.g., 2015)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = discussionTitle,
+                        onValueChange = { discussionTitle = it },
+                        label = { Text("Discussion Title (optional)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Select Event Color:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    CustomColorPickerRows(
+                        primaryColors = primaryColors,
+                        additionalShades = additionalShades,
+                        selectedColor = selectedColor,
+                        onColorSelected = { selectedColor = it }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            val allTags = flarumTagRepository.getTags()
+                            val parentId = allTags?.firstOrNull { it.slug == "alumni-reunions" }?.id
+                            if (parentId == null) {
+                                Toast.makeText(context, "Alumni parent tag missing. Create it first.", Toast.LENGTH_SHORT).show()
+                                return@launch
                             }
-                            graduationYear = ""
-                            discussionTitle = ""
-                        } else {
-                            Toast.makeText(context, "Failed to create event", Toast.LENGTH_SHORT).show()
+                            
+                            val finalTitle = if (graduationYear.isNotBlank()) {
+                                "Alumni Reunion $graduationYear"
+                            } else if (discussionTitle.isNotBlank()) {
+                                discussionTitle
+                            } else {
+                                ""
+                            }
+                            
+                            if (finalTitle.isBlank()) {
+                                Toast.makeText(context, "Please enter a graduation year or a discussion title.", Toast.LENGTH_SHORT).show()
+                                return@launch
+                            }
+                            
+                            val newTag = flarumTagRepository.createTag(
+                                name = finalTitle,
+                                color = selectedColor.toHexString(),
+                                parentTagId = parentId
+                            )
+                            
+                            if (newTag != null) {
+                                Toast.makeText(context, "Event '${newTag.name}' created", Toast.LENGTH_SHORT).show()
+                                val updatedAllTags = flarumTagRepository.getTags()
+                                if (updatedAllTags != null) {
+                                    val alumniEvents = updatedAllTags.filter { it.parentId == parentId }
+                                    val eventsParentId = updatedAllTags.firstOrNull { it.slug == "events" }?.id
+                                    val adminEvents = if (eventsParentId != null) {
+                                        updatedAllTags.filter { tag ->
+                                            tag.parentId == eventsParentId && 
+                                            (tag.name.contains("[ALUMNI]") || tag.name.contains("[ALL]"))
+                                        }
+                                    } else {
+                                        emptyList()
+                                    }
+                                    tagList = alumniEvents + adminEvents
+                                }
+                                graduationYear = ""
+                                discussionTitle = ""
+                                showCreateDialog = false
+                            } else {
+                                Toast.makeText(context, "Failed to create event", Toast.LENGTH_SHORT).show()
+                            }
                         }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Create Event")
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF005B4F)
+                    )
+                ) {
+                    Text("Create")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showCreateDialog = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Gray
+                    )
+                ) {
+                    Text("Cancel")
+                }
             }
-        }
+        )
     }
 }
 
@@ -345,34 +494,29 @@ fun StudentEventsScreen(email: String, navController: NavController) {
     val coroutineScope = rememberCoroutineScope()
     val flarumTagRepository = remember { FlarumTagRepository() }
 
-    // Dropdown state variables
-    val yearOptions = listOf("FE", "SE", "TE", "BE")
-    var expanded by remember { mutableStateOf(false) }
-    var selectedYear by remember { mutableStateOf(yearOptions.first()) }
-
-    // Event name input field
     var eventName by remember { mutableStateOf("") }
-    var selectedColor by remember { mutableStateOf(Color(0xFFFFFFFF)) }
+    var selectedColor by remember { mutableStateOf(Color(0xFF005B4F)) }
     var tagList by remember { mutableStateOf<List<Tag>>(emptyList()) }
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var selectedYear by remember { mutableStateOf("FE") }
+    var expanded by remember { mutableStateOf(false) }
+    val yearOptions = listOf("FE", "SE", "TE", "BE")
 
     val primaryColors = listOf(
-        Color(0xFFFF0000),
-        Color(0xFFFFA500),
-        Color(0xFFFFFF00),
-        Color(0xFF008000),
-        Color(0xFF0000FF),
-        Color(0xFF800080)
+        Color(0xFF005B4F), // College theme color
+        Color(0xFF2E7D32), // Forest Green
+        Color(0xFF1565C0), // Royal Blue
+        Color(0xFF6A1B9A), // Deep Purple
+        Color(0xFFC62828), // Deep Red
+        Color(0xFF8D6E63)  // Brown
     )
     val additionalShades = listOf(
-        Color(0xFFFFC0CB),
-        Color(0xFF808080),
-        Color(0xFF000000),
-        Color(0xFFFFFFFF),
-        Color(0xFFB22222),
-        Color(0xFF8B4513),
-        Color(0xFF2E8B57),
-        Color(0xFF4682B4),
-        Color(0xFFDAA520)
+        Color(0xFF78909C), // Blue Gray
+        Color(0xFF546E7A), // Steel Blue
+        Color(0xFF37474F), // Dark Slate
+        Color(0xFF004D40), // Teal
+        Color(0xFF006064), // Cyan
+        Color(0xFF01579B)  // Light Blue
     )
 
     // Load both student-created events and admin events marked for students
@@ -402,136 +546,259 @@ fun StudentEventsScreen(email: String, navController: NavController) {
         tagList = studentEvents + adminEvents
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        // Screen Title
-        Text(text = "Student Events", fontSize = 24.sp)
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // List of discussions
-        LazyColumn(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F5)) // Fallback background color
+    ) {
+        // Background Image
+        Image(
+            painter = painterResource(id = R.drawable.student_events_bg),
+            contentDescription = "Student Events Background",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            colorFilter = ColorFilter.tint(
+                color = Color.Black.copy(alpha = 0.3f),
+                blendMode = BlendMode.Darken
+            )
+        )
+        
+        Column(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
-            items(tagList) { tag ->
-                TagCard(tag = tag) {
-                    val tagUrl = "http://129.154.249.30:8080/t/${tag.slug}"
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(tagUrl))
-                    context.startActivity(intent)
-                }
-            }
-        }
-
-        // Creation UI (pinned at the bottom)
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(text = "Create New Student Event", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Year selection dropdown
-            Text(text = "Select Your Year:", fontSize = 16.sp)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Button(
-                    onClick = { expanded = !expanded }
-                ) {
-                    Text(text = selectedYear)
-                }
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    yearOptions.forEach { year ->
-                        DropdownMenuItem(
-                            text = { Text(year) },
-                            onClick = {
-                                selectedYear = year
-                                expanded = false
-                            }
+            // Header with gradient background
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.primaryContainer
+                            )
                         )
-                    }
+                    )
+                    .padding(16.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "Student Events",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = Color.White,
+                        modifier = Modifier.shadow(4.dp, shape = RoundedCornerShape(4.dp))
+                    )
+                    Text(
+                        text = "Discover and organize campus activities",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
                 }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Event name input
-            OutlinedTextField(
-                value = eventName,
-                onValueChange = { eventName = it },
-                label = { Text("Event Name") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(text = "Select Tag Color:", fontSize = 16.sp)
-            Spacer(modifier = Modifier.height(8.dp))
-            CustomColorPickerRows(
-                primaryColors = primaryColors,
-                additionalShades = additionalShades,
-                selectedColor = selectedColor,
-                onColorSelected = { selectedColor = it }
-            )
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Create New Event button
             Button(
-                onClick = {
-                    coroutineScope.launch {
-                        val allTags = flarumTagRepository.getTags()
-                        val parentId = allTags?.firstOrNull { it.slug == "student-events" }?.id
-                        if (parentId == null) {
-                            Toast.makeText(context, "Student parent tag missing. Create it first.", Toast.LENGTH_SHORT).show()
-                            return@launch
-                        }
+                onClick = { showCreateDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF005B4F)
+                )
+            ) {
+                Text("Create New Event")
+            }
 
-                        // Generate final title as "FE - [Event Name]"
-                        val finalTitle = if (eventName.isNotBlank()) {
-                            "$selectedYear - $eventName"
-                        } else {
-                            Toast.makeText(context, "Please enter an event name.", Toast.LENGTH_SHORT).show()
-                            return@launch
-                        }
-
-                        val newTag = flarumTagRepository.createTag(
-                            name = finalTitle,
-                            color = selectedColor.toHexString(),
-                            parentTagId = parentId
-                        )
-
-                        if (newTag != null) {
-                            Toast.makeText(context, "Event '${newTag.name}' created", Toast.LENGTH_SHORT).show()
-                            // Refresh list
-                            val updatedAllTags = flarumTagRepository.getTags()
-                            if (updatedAllTags != null) {
-                                // Get updated student events
-                                val studentEvents = updatedAllTags.filter { it.parentId == parentId }
-                                
-                                // Get admin events marked for students
-                                val eventsParentId = updatedAllTags.firstOrNull { it.slug == "events" }?.id
-                                val adminEvents = if (eventsParentId != null) {
-                                    updatedAllTags.filter { tag ->
-                                        tag.parentId == eventsParentId && 
-                                        (tag.name.contains("[STUDENTS]") || tag.name.contains("[ALL]"))
-                                    }
-                                } else {
-                                    emptyList()
-                                }
-                                
-                                // Update the combined list
-                                tagList = studentEvents + adminEvents
+            // List of events
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                items(tagList) { tag ->
+                    val colorStr = if (tag.color.isNullOrEmpty()) "#005B4F" else tag.color
+                    val backgroundColor = try {
+                        Color(AndroidColor.parseColor(colorStr))
+                    } catch (e: Exception) {
+                        Color(0xFF005B4F)
+                    }
+                    
+                    Card(
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable {
+                                val tagUrl = "http://129.154.249.30:8080/t/${tag.slug}"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(tagUrl))
+                                context.startActivity(intent)
                             }
-                            eventName = ""
-                        } else {
-                            Toast.makeText(context, "Failed to create event", Toast.LENGTH_SHORT).show()
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .background(backgroundColor)
+                                .padding(16.dp)
+                        ) {
+                            Column {
+                                Text(
+                                    text = tag.name,
+                                    color = Color.White,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                
+                                if (tag.name.contains("[OFFICIAL]")) {
+                                    Text(
+                                        text = "OFFICIAL COLLEGE EVENT",
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    )
+                                }
+                            }
                         }
                     }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Create Event")
+                }
             }
         }
+    }
+
+    // Create Event Dialog
+    if (showCreateDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showCreateDialog = false },
+            title = { Text("Create New Event") },
+            text = {
+                Column {
+                    // Year selection dropdown
+                    Text("Select Your Year:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Box {
+                        Button(
+                            onClick = { expanded = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF005B4F)
+                            )
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(selectedYear)
+                                Icon(
+                                    if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                    contentDescription = null
+                                )
+                            }
+                        }
+                        
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            yearOptions.forEach { year ->
+                                DropdownMenuItem(
+                                    text = { Text(year) },
+                                    onClick = {
+                                        selectedYear = year
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    OutlinedTextField(
+                        value = eventName,
+                        onValueChange = { eventName = it },
+                        label = { Text("Event Name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text("Select Event Color:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    CustomColorPickerRows(
+                        primaryColors = primaryColors,
+                        additionalShades = additionalShades,
+                        selectedColor = selectedColor,
+                        onColorSelected = { selectedColor = it }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            val allTags = flarumTagRepository.getTags()
+                            val parentId = allTags?.firstOrNull { it.slug == "student-events" }?.id
+                            if (parentId == null) {
+                                Toast.makeText(context, "Student parent tag missing. Create it first.", Toast.LENGTH_SHORT).show()
+                                return@launch
+                            }
+
+                            if (eventName.isNotBlank()) {
+                                val finalTitle = "$selectedYear - $eventName"
+                                val newTag = flarumTagRepository.createTag(
+                                    name = finalTitle,
+                                    color = selectedColor.toHexString(),
+                                    parentTagId = parentId
+                                )
+
+                                if (newTag != null) {
+                                    Toast.makeText(context, "Event '${newTag.name}' created", Toast.LENGTH_SHORT).show()
+                                    val updatedAllTags = flarumTagRepository.getTags()
+                                    if (updatedAllTags != null) {
+                                        val studentEvents = updatedAllTags.filter { it.parentId == parentId }
+                                        val eventsParentId = updatedAllTags.firstOrNull { it.slug == "events" }?.id
+                                        val adminEvents = if (eventsParentId != null) {
+                                            updatedAllTags.filter { tag ->
+                                                tag.parentId == eventsParentId && 
+                                                (tag.name.contains("[STUDENTS]") || tag.name.contains("[ALL]"))
+                                            }
+                                        } else {
+                                            emptyList()
+                                        }
+                                        tagList = studentEvents + adminEvents
+                                    }
+                                    eventName = ""
+                                    showCreateDialog = false
+                                } else {
+                                    Toast.makeText(context, "Failed to create event", Toast.LENGTH_SHORT).show()
+                                }
+                            } else {
+                                Toast.makeText(context, "Please enter an event name.", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF005B4F)
+                    )
+                ) {
+                    Text("Create")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showCreateDialog = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Gray
+                    )
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
@@ -541,12 +808,9 @@ fun CollegeAdminEventsScreen(email: String, navController: NavController) {
     val coroutineScope = rememberCoroutineScope()
     val flarumTagRepository = remember { FlarumTagRepository() }
     
-    // State for managing different event types
     var collegeEventsList by remember { mutableStateOf<List<Tag>>(emptyList()) }
     var alumniEventsList by remember { mutableStateOf<List<Tag>>(emptyList()) }
     var studentEventsList by remember { mutableStateOf<List<Tag>>(emptyList()) }
-    
-    // State for creating a new event
     var showCreateDialog by remember { mutableStateOf(false) }
     var newEventTitle by remember { mutableStateOf("") }
     var newEventDate by remember { mutableStateOf("") }
@@ -555,16 +819,32 @@ fun CollegeAdminEventsScreen(email: String, navController: NavController) {
     var isForStudents by remember { mutableStateOf(false) }
     var isForAlumni by remember { mutableStateOf(false) }
     
-    // Define event theme colors
-    val eventColors = listOf(
+    val primaryColors = listOf(
         Color(0xFF005B4F), // College theme color
-        Color(0xFF2E7D32), // Green
-        Color(0xFF1565C0), // Blue
-        Color(0xFF6A1B9A), // Purple
-        Color(0xFFC62828), // Red
-        Color(0xFFFF8F00)  // Orange
+        Color(0xFF2E7D32), // Forest Green
+        Color(0xFF1565C0), // Royal Blue
+        Color(0xFF6A1B9A), // Deep Purple
+        Color(0xFFC62828), // Deep Red
+        Color(0xFF8D6E63), // Brown
+        Color(0xFF455A64), // Slate Blue
+        Color(0xFF0277BD), // Ocean Blue
+        Color(0xFF2E7D32), // Emerald Green
+        Color(0xFF4527A0)  // Indigo
     )
     
+    val additionalShades = listOf(
+        Color(0xFF78909C), // Blue Gray
+        Color(0xFF546E7A), // Steel Blue
+        Color(0xFF37474F), // Dark Slate
+        Color(0xFF004D40), // Teal
+        Color(0xFF006064), // Cyan
+        Color(0xFF01579B), // Light Blue
+        Color(0xFF311B92), // Deep Indigo
+        Color(0xFF4A148C), // Purple
+        Color(0xFF880E4F), // Deep Pink
+        Color(0xFFBF360C)  // Deep Orange
+    )
+
     // Fetch all types of events when screen loads
     LaunchedEffect(Unit) {
         val allTags = flarumTagRepository.getTags() ?: return@LaunchedEffect
@@ -581,124 +861,319 @@ fun CollegeAdminEventsScreen(email: String, navController: NavController) {
             alumniEventsList = allTags.filter { it.parentId == alumniParentId }
         }
         
-        // Get student events
+        // Get ONLY student-created events
         val studentParentId = allTags.firstOrNull { it.slug == "student-events" }?.id
-        if (studentParentId != null) {
-            studentEventsList = allTags.filter { it.parentId == studentParentId }
+        studentEventsList = if (studentParentId != null) {
+            allTags.filter { it.parentId == studentParentId }
+        } else {
+            emptyList()
         }
     }
     
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState())
+            .background(Color(0xFFF5F5F5))
     ) {
-        Text(
-            text = "Events & Reunions Management",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
+        // Background Image
+        Image(
+            painter = painterResource(id = R.drawable.student_events_bg),
+            contentDescription = "Admin Events Background",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            colorFilter = ColorFilter.tint(
+                color = Color.Black.copy(alpha = 0.3f),
+                blendMode = BlendMode.Darken
+            )
         )
-        
-        Text(
-            text = "Organize, promote, and manage campus events and alumni reunions",
-            fontSize = 16.sp,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
-        
-        // Create New Event button
-        Button(
-            onClick = { showCreateDialog = true },
+
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
-            Text("Create New Official Event")
-        }
-        
-        // College events section
-        Card(
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "College Official Events",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                
-                if (collegeEventsList.isEmpty()) {
-                    Text(
-                        text = "No official events found. Create your first event!",
-                        modifier = Modifier.padding(vertical = 16.dp)
+            // Header with gradient background
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.primaryContainer
+                            )
+                        )
                     )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
+                    .padding(16.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "Events & Reunions Management",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = Color.White,
+                        modifier = Modifier.shadow(4.dp, shape = RoundedCornerShape(4.dp))
+                    )
+                    Text(
+                        text = "Organize, promote, and manage campus events and alumni reunions",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Create New Event button
+            Button(
+                onClick = { showCreateDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF005B4F)
+                )
+            ) {
+                Text("Create New Official Event")
+            }
+
+            // Main content with three sections
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+            ) {
+                // College events section
+                Card(
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(vertical = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
                     ) {
-                        items(collegeEventsList) { event ->
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
+                        Text(
+                            text = "College Official Events",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        
+                        if (collegeEventsList.isEmpty()) {
+                            Text(
+                                text = "No official events found. Create your first event!",
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize()
                             ) {
-                                val colorStr = if (event.color.isNullOrEmpty()) "#005B4F" else event.color
-                                val backgroundColor = try {
-                                    Color(android.graphics.Color.parseColor(colorStr))
-                                } catch (e: Exception) {
-                                    Color(0xFF005B4F)
-                                }
-                                
-                                Card(
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            val tagUrl = "http://129.154.249.30:8080/t/${event.slug}"
-                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(tagUrl))
-                                            context.startActivity(intent)
-                                        }
-                                ) {
-                                    Column(
+                                items(collegeEventsList) { event ->
+                                    val colorStr = if (event.color.isNullOrEmpty()) "#005B4F" else event.color
+                                    val backgroundColor = try {
+                                        Color(AndroidColor.parseColor(colorStr))
+                                    } catch (e: Exception) {
+                                        Color(0xFF005B4F)
+                                    }
+                                    
+                                    Card(
+                                        shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier
-                                            .background(backgroundColor)
-                                            .padding(16.dp)
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp)
+                                            .clickable {
+                                                val tagUrl = "http://129.154.249.30:8080/t/${event.slug}"
+                                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(tagUrl))
+                                                context.startActivity(intent)
+                                            }
                                     ) {
-                                        Text(
-                                            text = event.name,
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 18.sp
-                                        )
-                                        
-                                        // If the event name contains a date in parentheses, extract and show it
-                                        val dateRegex = "\\(([^)]+)\\)".toRegex()
-                                        val matchResult = dateRegex.find(event.name)
-                                        if (matchResult != null) {
-                                            Text(
-                                                text = matchResult.groupValues[1],
-                                                color = Color.White,
-                                                fontSize = 14.sp
-                                            )
+                                        Box(
+                                            modifier = Modifier
+                                                .background(backgroundColor)
+                                                .padding(16.dp)
+                                        ) {
+                                            Column {
+                                                Text(
+                                                    text = event.name,
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 18.sp
+                                                )
+                                                
+                                                val dateRegex = "\\(([^)]+)\\)".toRegex()
+                                                val matchResult = dateRegex.find(event.name)
+                                                if (matchResult != null) {
+                                                    Text(
+                                                        text = matchResult.groupValues[1],
+                                                        color = Color.White,
+                                                        fontSize = 14.sp,
+                                                        modifier = Modifier.padding(top = 8.dp)
+                                                    )
+                                                }
+                                                
+                                                if (event.name.contains("[OFFICIAL]")) {
+                                                    Text(
+                                                        text = "OFFICIAL COLLEGE EVENT",
+                                                        color = Color.White,
+                                                        fontSize = 12.sp,
+                                                        modifier = Modifier.padding(top = 8.dp)
+                                                    )
+                                                }
+                                            }
                                         }
-                                        
-                                        // Show "OFFICIAL" label if it's an official college event
-                                        if (event.name.startsWith("[OFFICIAL]")) {
-                                            Text(
-                                                text = "OFFICIAL COLLEGE EVENT",
-                                                color = Color.Yellow,
-                                                fontSize = 12.sp,
-                                                modifier = Modifier.padding(top = 8.dp)
-                                            )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Alumni events section
+                Card(
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(vertical = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Alumni Reunion Events",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        
+                        if (alumniEventsList.isEmpty()) {
+                            Text(
+                                text = "No alumni events found.",
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(alumniEventsList) { event ->
+                                    val colorStr = if (event.color.isNullOrEmpty()) "#1565C0" else event.color
+                                    val backgroundColor = try {
+                                        Color(AndroidColor.parseColor(colorStr))
+                                    } catch (e: Exception) {
+                                        Color(0xFF1565C0)
+                                    }
+                                    
+                                    Card(
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp)
+                                            .clickable {
+                                                val tagUrl = "http://129.154.249.30:8080/t/${event.slug}"
+                                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(tagUrl))
+                                                context.startActivity(intent)
+                                            }
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .background(backgroundColor)
+                                                .padding(16.dp)
+                                        ) {
+                                            Column {
+                                                Text(
+                                                    text = event.name,
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 18.sp
+                                                )
+                                                
+                                                Text(
+                                                    text = "Alumni Event",
+                                                    color = Color.White,
+                                                    fontSize = 12.sp,
+                                                    modifier = Modifier.padding(top = 8.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Student events section
+                Card(
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(vertical = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Student Events",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        
+                        if (studentEventsList.isEmpty()) {
+                            Text(
+                                text = "No student events found.",
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(studentEventsList) { event ->
+                                    val colorStr = if (event.color.isNullOrEmpty()) "#2E7D32" else event.color
+                                    val backgroundColor = try {
+                                        Color(AndroidColor.parseColor(colorStr))
+                                    } catch (e: Exception) {
+                                        Color(0xFF2E7D32)
+                                    }
+                                    
+                                    Card(
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp)
+                                            .clickable {
+                                                val tagUrl = "http://129.154.249.30:8080/t/${event.slug}"
+                                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(tagUrl))
+                                                context.startActivity(intent)
+                                            }
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .background(backgroundColor)
+                                                .padding(16.dp)
+                                        ) {
+                                            Column {
+                                                Text(
+                                                    text = event.name,
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 18.sp
+                                                )
+                                                
+                                                // Show the year if it's in the event name
+                                                if (event.name.contains("FE") || event.name.contains("SE") || 
+                                                    event.name.contains("TE") || event.name.contains("BE")) {
+                                                    Text(
+                                                        text = event.name.substringBefore(" - "),
+                                                        color = Color.White,
+                                                        fontSize = 14.sp,
+                                                        modifier = Modifier.padding(top = 4.dp)
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -707,166 +1182,13 @@ fun CollegeAdminEventsScreen(email: String, navController: NavController) {
                     }
                 }
             }
-        }
-        
-        // Alumni events section
-        Card(
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Alumni Reunion Events",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                
-                if (alumniEventsList.isEmpty()) {
-                    Text(
-                        text = "No alumni events found.",
-                        modifier = Modifier.padding(vertical = 16.dp)
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                    ) {
-                        items(alumniEventsList) { event ->
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
-                            ) {
-                                val colorStr = if (event.color.isNullOrEmpty()) "#1565C0" else event.color
-                                val backgroundColor = try {
-                                    Color(android.graphics.Color.parseColor(colorStr))
-                                } catch (e: Exception) {
-                                    Color(0xFF1565C0)
-                                }
-                                
-                                Card(
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            val tagUrl = "http://129.154.249.30:8080/t/${event.slug}"
-                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(tagUrl))
-                                            context.startActivity(intent)
-                                        }
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .background(backgroundColor)
-                                            .padding(16.dp)
-                                    ) {
-                                        Text(
-                                            text = event.name,
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 18.sp
-                                        )
-                                        
-                                        Text(
-                                            text = "Alumni Event",
-                                            color = Color.White,
-                                            fontSize = 12.sp,
-                                            modifier = Modifier.padding(top = 8.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Student events section
-        Card(
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Student Events",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                
-                if (studentEventsList.isEmpty()) {
-                    Text(
-                        text = "No student events found.",
-                        modifier = Modifier.padding(vertical = 16.dp)
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                    ) {
-                        items(studentEventsList) { event ->
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
-                            ) {
-                                val colorStr = if (event.color.isNullOrEmpty()) "#2E7D32" else event.color
-                                val backgroundColor = try {
-                                    Color(android.graphics.Color.parseColor(colorStr))
-                                } catch (e: Exception) {
-                                    Color(0xFF2E7D32)
-                                }
-                                
-                                Card(
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            val tagUrl = "http://129.154.249.30:8080/t/${event.slug}"
-                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(tagUrl))
-                                            context.startActivity(intent)
-                                        }
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .background(backgroundColor)
-                                            .padding(16.dp)
-                                    ) {
-                                        Text(
-                                            text = event.name,
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 18.sp
-                                        )
-                                        
-                                        Text(
-                                            text = "Student Event",
-                                            color = Color.White,
-                                            fontSize = 12.sp,
-                                            modifier = Modifier.padding(top = 8.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            
+            // Add some bottom padding
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
     
-    // Dialog to create a new event
+    // Create Event Dialog
     if (showCreateDialog) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { 
@@ -899,15 +1221,36 @@ fun CollegeAdminEventsScreen(email: String, navController: NavController) {
                     
                     Text("Select Event Theme Color:")
                     
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Primary Colors
+                    Text("Primary Colors", fontSize = 14.sp)
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp)
                     ) {
-                        items(eventColors) { color ->
+                        items(primaryColors) { color ->
                             CustomColorSwatch(
-                                color = color, 
+                                color = color,
+                                selected = color == selectedColor,
+                                onClick = { selectedColor = color }
+                            )
+                        }
+                    }
+                    
+                    // Additional Shades
+                    Text("Additional Shades", fontSize = 14.sp)
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                    ) {
+                        items(additionalShades) { color ->
+                            CustomColorSwatch(
+                                color = color,
                                 selected = color == selectedColor,
                                 onClick = { selectedColor = color }
                             )
@@ -1036,17 +1379,25 @@ fun CollegeAdminEventsScreen(email: String, navController: NavController) {
                                 ).show()
                             }
                         }
-                    }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF005B4F)
+                    )
                 ) {
-                    Text("Create Event")
+                    Text("Create")
                 }
             },
             dismissButton = {
-                Button(onClick = { 
-                    showCreateDialog = false
-                    isForStudents = false
-                    isForAlumni = false
-                }) {
+                Button(
+                    onClick = { 
+                        showCreateDialog = false
+                        isForStudents = false
+                        isForAlumni = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Gray
+                    )
+                ) {
                     Text("Cancel")
                 }
             }
@@ -1062,29 +1413,73 @@ fun EventCard(
     onClick: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(12.dp),
         modifier = Modifier
-            .width(180.dp)
-            .clickable(onClick = onClick)
+            .width(220.dp)
+            .height(160.dp)
+            .shadow(
+                elevation = 4.dp,
+                shape = RoundedCornerShape(12.dp),
+                spotColor = backgroundColor.copy(alpha = 0.5f)
+            )
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = backgroundColor
+        )
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .background(backgroundColor)
-                .padding(12.dp)
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
-            Text(
-                text = title,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-            
-            Text(
-                text = date,
-                color = Color.White,
-                fontSize = 14.sp
-            )
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = title,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Text(
+                        text = date,
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 14.sp
+                    )
+                }
+                
+                // Add a subtle divider and status indicator
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "View Details",
+                            color = Color.White,
+                            fontSize = 12.sp
+                        )
+                    }
+                    
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(Color.White.copy(alpha = 0.6f), CircleShape)
+                    )
+                }
+            }
         }
     }
 }

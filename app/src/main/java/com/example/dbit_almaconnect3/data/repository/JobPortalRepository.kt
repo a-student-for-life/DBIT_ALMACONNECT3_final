@@ -251,17 +251,24 @@ class JobPortalRepository {
     // 2. It creates the discussion and attaches that secondary tag.
     // 3. It returns the URL for the secondary tag page, so the user is taken there.
     private suspend fun createFlarumDiscussion(title: String, content: String): String? = withContext(Dispatchers.IO) {
+        // Ensure title is at least 3 characters
+        val validTitle = if (title.length < 3) {
+            title.padEnd(3, ' ')
+        } else {
+            title
+        }
+
         // Create a secondary tag for this job.
-        val secondaryTag = createSecondaryTagForJob(title)
+        val secondaryTag = createSecondaryTagForJob(validTitle)
         if (secondaryTag == null) {
-            Log.e("JobPortalRepository", "Failed to create secondary tag for job: $title")
+            Log.e("JobPortalRepository", "Failed to create secondary tag for job: $validTitle")
             return@withContext null
         }
         val json = JSONObject().apply {
             put("data", JSONObject().apply {
                 put("type", "discussions")
                 put("attributes", JSONObject().apply {
-                    put("title", title)
+                    put("title", validTitle)
                     put("content", content)
                 })
                 // Attach the secondary tag.

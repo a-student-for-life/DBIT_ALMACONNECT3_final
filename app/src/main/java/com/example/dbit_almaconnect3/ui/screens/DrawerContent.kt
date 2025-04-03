@@ -53,7 +53,7 @@ fun DrawerContent(
             DrawerItem("💼 Job Portal", "jobs", navController, drawerState, scope)
             DrawerItem("🎉 Events & Reunions", "events", navController, drawerState, scope)
             DrawerItem("👨‍🏫 Mentorship", "mentorship", navController, drawerState, scope)
-            DrawerItem("🏆 Success Stories", "success_stories", navController, drawerState, scope)
+            DrawerItem("📝 Success Stories/Blogs", "success_stories", navController, drawerState, scope)
         }
         Spacer(modifier = Modifier.height(20.dp))
         Button(

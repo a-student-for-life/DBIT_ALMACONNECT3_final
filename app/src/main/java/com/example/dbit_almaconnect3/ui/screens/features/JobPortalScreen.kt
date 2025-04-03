@@ -61,12 +61,12 @@ fun CollegeAdminJobPortalScreen(email: String, navController: NavController) {
     val viewModel: JobPortalViewModel = viewModel()
     val jobs by viewModel.jobs.collectAsState()
     val context = LocalContext.current
-    
+
     // Fetch jobs when screen loads
     LaunchedEffect(Unit) {
         viewModel.fetchJobs()
     }
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -79,13 +79,13 @@ fun CollegeAdminJobPortalScreen(email: String, navController: NavController) {
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 16.dp)
         )
-        
+
         Text(
             text = "Oversee job listings, verify opportunities, and manage collaborations with employers",
             fontSize = 16.sp,
             modifier = Modifier.padding(bottom = 24.dp)
         )
-        
+
         // Pending Job Verification Card
         Card(
             modifier = Modifier
@@ -101,9 +101,9 @@ fun CollegeAdminJobPortalScreen(email: String, navController: NavController) {
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                
+
                 val pendingJobs = jobs.filter { !it.status }
-                
+
                 if (pendingJobs.isEmpty()) {
                     Text(
                         text = "No pending jobs to review",
@@ -116,7 +116,7 @@ fun CollegeAdminJobPortalScreen(email: String, navController: NavController) {
                         fontSize = 14.sp,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    
+
                     pendingJobs.forEach { job ->
                         PendingJobCard(
                             job = job,
@@ -135,7 +135,7 @@ fun CollegeAdminJobPortalScreen(email: String, navController: NavController) {
                 }
             }
         }
-        
+
         // Verified Jobs Card
         Card(
             modifier = Modifier
@@ -151,9 +151,9 @@ fun CollegeAdminJobPortalScreen(email: String, navController: NavController) {
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                
+
                 val verifiedJobs = jobs.filter { it.status }
-                
+
                 if (verifiedJobs.isEmpty()) {
                     Text(
                         text = "No verified jobs",
@@ -166,7 +166,7 @@ fun CollegeAdminJobPortalScreen(email: String, navController: NavController) {
                         fontSize = 14.sp,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    
+
                     verifiedJobs.forEach { job ->
                         VerifiedJobCard(
                             job = job,
@@ -185,7 +185,7 @@ fun CollegeAdminJobPortalScreen(email: String, navController: NavController) {
                 }
             }
         }
-        
+
         // Company Statistics Card
         Card(
             modifier = Modifier
@@ -201,19 +201,19 @@ fun CollegeAdminJobPortalScreen(email: String, navController: NavController) {
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                
+
                 Text(
                     text = "Companies actively recruiting from your institution",
                     fontSize = 14.sp,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
-                
+
                 // Group jobs by company and count them
                 val companyStats = jobs
                     .groupBy { it.company }
                     .map { (company, jobList) -> company to jobList.size }
                     .sortedByDescending { it.second }
-                
+
                 if (companyStats.isEmpty()) {
                     Text(
                         text = "No companies have posted jobs yet",
@@ -251,52 +251,69 @@ fun PendingJobCard(job: JobPostingResponse, onVerify: () -> Unit) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            Text(
-                text = job.title,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            
-            Text(
-                text = "Company: ${job.company}",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-            )
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            
-            Text(
-                text = job.description,
-                fontSize = 14.sp,
-                maxLines = 3,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Posted by: ${job.postedBy}",
-                    fontSize = 12.sp,
-                    color = Color.Gray
+                    text = job.title,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
                 )
-                
-                Text(
-                    text = "Posted: ${DateUtils.formatDate(job.postedAt)}",
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
+
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFFA000)
+                    ),
+                    modifier = Modifier.padding(4.dp)
+                ) {
+                    Text(
+                        text = "⏳ Pending",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
             }
-            
+
+            Text(
+                text = "Company: ${job.company}",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = job.description,
+                fontSize = 14.sp,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
+            Text(
+                text = "Posted by: ${job.postedBy}",
+                fontSize = 12.sp,
+                color = Color.Gray
+            )
+
+            Text(
+                text = "Posted: ${DateUtils.formatDate(job.postedAt)}",
+                fontSize = 12.sp,
+                color = Color.Gray
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             Button(
                 onClick = onVerify,
-                modifier = Modifier.align(Alignment.End)
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF4CAF50)
+                )
             ) {
                 Text("Verify Job")
             }
@@ -313,7 +330,7 @@ fun VerifiedJobCard(job: JobPostingResponse, onRevoke: () -> Unit) {
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFE8F5E9) // Light green background
+            containerColor = Color(0xFF1B5E20) // Darker green background that works better in dark mode
         )
     ) {
         Column(
@@ -327,9 +344,10 @@ fun VerifiedJobCard(job: JobPostingResponse, onRevoke: () -> Unit) {
                 Text(
                     text = job.title,
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White // Make text white for better contrast on dark background
                 )
-                
+
                 Card(
                     colors = CardDefaults.cardColors(
                         containerColor = Color(0xFF4CAF50)
@@ -344,43 +362,48 @@ fun VerifiedJobCard(job: JobPostingResponse, onRevoke: () -> Unit) {
                     )
                 }
             }
-            
+
             Text(
                 text = "Company: ${job.company}",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                color = Color.White // Make text white for better contrast on dark background
             )
-            
+
             Spacer(modifier = Modifier.height(4.dp))
-            
+
             Text(
                 text = job.description,
                 fontSize = 14.sp,
                 maxLines = 3,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                color = Color.White.copy(alpha = 0.87f) // Slightly dimmed white for better readability
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
-            Row(
+
+            Text(
+                text = "Posted by: ${job.postedBy}",
+                fontSize = 12.sp,
+                color = Color.White.copy(alpha = 0.6f) // Dimmed white for secondary text
+            )
+
+            Text(
+                text = "Posted: ${DateUtils.formatDate(job.postedAt)}",
+                fontSize = 12.sp,
+                color = Color.White.copy(alpha = 0.6f) // Dimmed white for secondary text
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = onRevoke,
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Posted by: ${job.postedBy}",
-                    fontSize = 12.sp,
-                    color = Color.Gray
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFF44336)
                 )
-                
-                TextButton(
-                    onClick = onRevoke,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = Color.Red
-                    )
-                ) {
-                    Text("Revoke Verification")
-                }
+            ) {
+                Text("Revoke Verification")
             }
         }
     }

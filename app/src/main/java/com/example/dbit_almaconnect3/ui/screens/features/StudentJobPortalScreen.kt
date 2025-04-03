@@ -135,6 +135,9 @@ fun getFileFromUri(context: Context, uri: Uri): File? {
 
 @Composable
 fun JobPostingCardForStudent(job: JobPostingResponse, navController: NavController, onApply: () -> Unit) {
+    val viewModel: JobPortalViewModel = viewModel()
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -147,11 +150,11 @@ fun JobPostingCardForStudent(job: JobPostingResponse, navController: NavControll
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
         ) {
             Text(
-                text = job.title, 
-                fontSize = 20.sp, 
+                text = job.title,
+                fontSize = 20.sp,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
             )
-            
+
             if (job.status) {
                 androidx.compose.material3.Card(
                     colors = androidx.compose.material3.CardDefaults.cardColors(
@@ -168,35 +171,56 @@ fun JobPostingCardForStudent(job: JobPostingResponse, navController: NavControll
                 }
             }
         }
-        
+
         Text(
             text = "Company: ${job.company}",
             fontSize = 16.sp,
             fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
         )
-        
+
         Spacer(modifier = Modifier.height(4.dp))
-        
+
         Text(
             text = job.description,
             fontSize = 16.sp
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         Text(
             text = "Posted: ${DateUtils.formatDate(job.postedAt)}",
             fontSize = 14.sp,
             color = Color.Gray
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
-        Button(
-            onClick = onApply,
-            modifier = Modifier.align(Alignment.End)
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Apply Now")
+            Button(
+                onClick = onApply,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Apply Now")
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Button(
+                onClick = {
+                    if (job.discussionLink != null) {
+                        val encodedLink = Uri.encode(job.discussionLink)
+                        navController.navigate("discussion/$encodedLink")
+                    } else {
+                        Toast.makeText(context, "No discussion available for this job", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Open Discussion")
+            }
         }
     }
 }

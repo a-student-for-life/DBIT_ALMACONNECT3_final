@@ -1089,9 +1089,11 @@ fun AnnouncementItemWithActions(
 fun fetchAnnouncements(callback: (List<Announcement>) -> Unit) {
     val client = OkHttpClient()
     val token = App.instance.getSharedPreferences("auth", Context.MODE_PRIVATE).getString("token", "") ?: ""
+    val baseUrl = "http://129.154.249.30:8091"
+    val collectionId = "Announcements" // Collection name for announcements
     
     val request = Request.Builder()
-        .url("http://129.154.249.30:8091/api/collections/Announcements/records")
+        .url("$baseUrl/api/collections/Announcements/records")
         .addHeader("Authorization", "Bearer $token")
         .build()
     
@@ -1115,22 +1117,30 @@ fun fetchAnnouncements(callback: (List<Announcement>) -> Unit) {
                     
                     for (i in 0 until itemsArray.length()) {
                         val item = itemsArray.getJSONObject(i)
+                        val recordId = item.getString("id")
+                        
+                        // Process attachments to create full URLs
+                        val attachments = item.optJSONArray("attachments")?.let { attachmentsArray ->
+                            (0 until attachmentsArray.length()).map { index ->
+                                val fileName = attachmentsArray.getString(index)
+                                // Construct the full PocketBase file URL
+                                "$baseUrl/api/files/$collectionId/$recordId/$fileName"
+                            }
+                        }
+                        
                         announcements.add(
                             Announcement(
-                                id = item.getString("id"),
+                                id = recordId,
                                 title = item.getString("title"),
                                 content = item.getString("content"),
                                 created = item.getString("created"),
                                 updated = item.getString("updated"),
                                 pinned = item.optBoolean("pinned", false),
-                                attachments = item.optJSONArray("attachments")?.let { attachmentsArray ->
-                                    (0 until attachmentsArray.length()).map { attachmentsArray.getString(it) }
-                                }
+                                attachments = attachments
                             )
                         )
                     }
                     
-                    // Sort by default (newest first) - moved to the UI component
                     callback(announcements)
                 } catch (e: Exception) {
                     Log.e("AnnouncementsScreen", "Error parsing announcements: ${e.message}", e)

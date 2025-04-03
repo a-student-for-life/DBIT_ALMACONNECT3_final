@@ -496,9 +496,6 @@ fun StudentCompanyInsightsScreen(email: String, navController: NavController) {
     LaunchedEffect(key1 = Unit) {
         fetchCompanyInsights({ fetchedInsights ->
             insights = fetchedInsights
-            if (fetchedInsights.isEmpty()) {
-                Toast.makeText(context, "No insights found", Toast.LENGTH_SHORT).show()
-            }
         }, { error ->
             Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
         }, context)
@@ -536,7 +533,12 @@ fun StudentCompanyInsightsScreen(email: String, navController: NavController) {
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                Text(
+                    text = "No insights posted yet",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(8.dp)
+                )
             }
         } else {
             Text(
@@ -632,7 +634,12 @@ fun AlumniCompanyInsightsScreen(email: String, navController: NavController) {
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                Text(
+                    text = "No insights posted yet",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(8.dp)
+                )
             }
         } else {
             Text(
@@ -722,10 +729,10 @@ fun CollegeAdminCompanyInsightsScreen(email: String, navController: NavControlle
                 .padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
+    ) {
+        Text(
                 text = "Company Insights",
-                fontSize = 24.sp,
+            fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
             )
             
@@ -743,7 +750,12 @@ fun CollegeAdminCompanyInsightsScreen(email: String, navController: NavControlle
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                Text(
+                    text = "No insights posted yet",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(8.dp)
+                )
             }
         } else {
             Text(
@@ -793,6 +805,18 @@ fun CompanyInsightItem(
     var showAddCommentDialog by remember { mutableStateOf(false) }
     var comments by remember { mutableStateOf<List<CompanyInsightComment>>(emptyList()) }
     
+    // Get current user information
+    val sharedPrefs = context.getSharedPreferences("auth", Context.MODE_PRIVATE)
+    val currentUserId = sharedPrefs.getString("userId", "") ?: ""
+    val userRole = sharedPrefs.getString("role", "") ?: ""
+    
+    // Determine permissions
+    val isAuthor = insight.authorId == currentUserId
+    val isAdmin = userRole.equals("admin", ignoreCase = true)
+    val isCollegeAdmin = userRole.equals("college", ignoreCase = true) || 
+                        userRole.equals("collegeadmin", ignoreCase = true)
+    val canEditDelete = isAuthor || isAdmin || isCollegeAdmin
+    
     LaunchedEffect(showComments) {
         if (showComments) {
             viewModel.fetchCompanyInsightComments(
@@ -830,21 +854,23 @@ fun CompanyInsightItem(
                     fontWeight = FontWeight.Bold
                 )
                 
-                Row {
-                    IconButton(onClick = { showEditDialog = true }) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = "Edit",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    
-                    IconButton(onClick = { showDeleteConfirmation = true }) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            tint = MaterialTheme.colorScheme.error
-                        )
+                if (canEditDelete) {
+                    Row {
+                        IconButton(onClick = { showEditDialog = true }) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Edit",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        
+                        IconButton(onClick = { showDeleteConfirmation = true }) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             }
@@ -1045,9 +1071,9 @@ fun CommentItem(
                         text = comment.text,
                         fontSize = 14.sp,
                         modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                    
-                    Text(
+        )
+        
+        Text(
                         text = "By ${comment.authorName} on ${formatDate(comment.created)}",
                         fontSize = 12.sp,
                         color = Color.Gray,
