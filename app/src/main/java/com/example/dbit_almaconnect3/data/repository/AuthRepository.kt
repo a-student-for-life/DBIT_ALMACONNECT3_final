@@ -18,6 +18,14 @@ class AuthRepository {
     private val flarumApiKey = "9bf5f86b94d5873bf57808689182723dc93c6fdc"
     private val client = OkHttpClient()
 
+    // Helper function to validate email domain
+    private fun isValidDBITEmail(email: String, role: String): Boolean {
+        return when (role) {
+            "student" -> email.endsWith("@dbit.in", ignoreCase = true)
+            else -> true // Allow any email domain for alumni and college admin
+        }
+    }
+
     // Sign-up for both PocketBase and Flarum
     fun signupUser(
         email: String,
@@ -26,6 +34,12 @@ class AuthRepository {
         onSuccess: (String, String) -> Unit, // (email, role)
         onError: (String) -> Unit
     ) {
+        // Validate email domain based on role
+        if (!isValidDBITEmail(email, role)) {
+            onError("Students must use @dbit.in email addresses")
+            return
+        }
+
         val pbUrl = "$pocketBaseUrl/api/collections/users/records"
         // Use the base username for both student and alumni.
         val baseUsername = email.split("@")[0].replace("[^a-zA-Z0-9_]".toRegex(), "_")
@@ -119,6 +133,15 @@ class AuthRepository {
         onSuccess: (String, String) -> Unit, // (email, role)
         onError: (String) -> Unit
     ) {
+        // Get the role from the email prefix to determine validation
+        val role = if (email.endsWith("@dbit.in", ignoreCase = true)) "student" else "alumni"
+        
+        // Validate email domain based on role
+        if (!isValidDBITEmail(email, role)) {
+            onError("Students must use @dbit.in email addresses")
+            return
+        }
+
         val pbUrl = "$pocketBaseUrl/api/collections/users/auth-with-password"
         val pbJson = JSONObject().apply {
             put("identity", email)

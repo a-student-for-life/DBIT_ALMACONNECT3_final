@@ -43,6 +43,7 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
+    var emailError by remember { mutableStateOf("") }
     val context = LocalContext.current
 
     // Get the current color scheme from MaterialTheme
@@ -107,28 +108,22 @@ fun LoginScreen(
                     value = email,
                     onValueChange = { email = it },
                     label = { Text("Email") },
-                    modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Email,
-                            contentDescription = "Email Icon",
-                            tint = BlueBrandColor
-                        )
-                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Email,
                         imeAction = ImeAction.Next
                     ),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    textStyle = TextStyle(color = if (isDarkTheme) DarkTextPrimary else LightTextPrimary),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedTextColor = if (isDarkTheme) DarkTextPrimary else LightTextPrimary,
-                        focusedTextColor = if (isDarkTheme) DarkTextPrimary else LightTextPrimary,
-                        cursorColor = BlueBrandColor,
-                        unfocusedBorderColor = if (isDarkTheme) Color(0xFF444444) else Color(0xFFDDDDDD),
-                        focusedBorderColor = BlueBrandColor
-                    )
+                    isError = emailError.isNotEmpty(),
+                    supportingText = {
+                        if (emailError.isNotEmpty()) {
+                            Text(
+                                text = emailError,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
